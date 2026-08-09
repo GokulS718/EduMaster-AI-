@@ -1,0 +1,82 @@
+[
+  {
+    "id": "os",
+    "category": "Operating Systems",
+    "icon": "Cpu",
+    "description": "Core concepts of process control, concurrency primitives, memory management, and deadlock handling.",
+    "subtopics": [
+      {
+        "name": "Process Synchronization & Semaphores",
+        "description": "Critical sections, Mutex locks, Counting Semaphores, and Peterson's Algorithm."
+      },
+      {
+        "name": "Deadlocks & Banker's Algorithm",
+        "description": "4 Coffman conditions, deadlock prevention, detection, and resource allocation graphs."
+      },
+      {
+        "name": "Virtual Memory & Paging",
+        "description": "Page tables, Translation Lookaside Buffer (TLB), Page Faults, and replacement policies (LRU, FIFO)."
+      }
+    ]
+  },
+  {
+    "id": "ds",
+    "category": "Data Structures & Algorithms",
+    "icon": "Network",
+    "description": "Fundamental and advanced non-linear data structures, balanced trees, graph traversals, and hash tables.",
+    "subtopics": [
+      {
+        "name": "Trees & Self-Balancing BSTs",
+        "description": "AVL Trees, Red-Black Trees balancing rotations, B-Trees, and Trie structures."
+      },
+      {
+        "name": "Graph Algorithms & Shortest Path",
+        "description": "Dijkstra's Algorithm, Bellman-Ford, BFS/DFS traversals, and Minimum Spanning Trees (Kruskal/Prim)."
+      },
+      {
+        "name": "Hashing & Collision Resolution",
+        "description": "Hash functions, Separate Chaining, Open Addressing (Linear/Quadratic Probing, Double Hashing)."
+      }
+    ]
+  },
+  {
+    "id": "dbms",
+    "category": "Database Management Systems",
+    "icon": "Database",
+    "description": "Relational data modeling, normal forms, transaction ACID guarantees, and database index structures.",
+    "subtopics": [
+      {
+        "name": "Database Normalization (1NF to BCNF)",
+        "description": "Functional dependencies, candidate keys, loss-less join decomposition, and 3NF vs BCNF."
+      },
+      {
+        "name": "Transactions & ACID Concurrency",
+        "description": "Two-Phase Locking (2PL), Serializability, Isolation levels, and Write-Ahead Logging (WAL)."
+      },
+      {
+        "name": "B+ Tree Indexing & Query Processing",
+        "description": "Clustered vs Non-clustered indexing, B+ Tree search operations, and cost-based query execution."
+      }
+    ]
+  },
+  {
+    "id": "cn",
+    "category": "Computer Networks",
+    "icon": "Globe",
+    "description": "Layered protocol stack, TCP/IP fundamentals, IP routing algorithms, and network subnetting.",
+    "subtopics": [
+      {
+        "name": "TCP/IP Protocol Suite & 3-Way Handshake",
+        "description": "SYN/ACK connection establishment, TCP flow control (Sliding Window), and congestion control."
+      },
+      {
+        "name": "IP Routing Protocols & Algorithms",
+        "description": "Distance Vector (RIP), Link State (OSPF), BGP path vector, and packet forwarding tables."
+      },
+      {
+        "name": "Subnetting & CIDR Addressing",
+        "description": "IPv4 subnets, Subnet Mask calculation, CIDR notation, and Network/Broadcast addresses."
+      }
+    ]
+  }
+]
