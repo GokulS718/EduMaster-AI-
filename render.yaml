@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: edumaster-ai-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: edumaster-ai-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
