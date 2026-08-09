@@ -13,7 +13,9 @@ import {
   CheckCircle2, 
   Zap,
   Loader2,
-  Database
+  Database,
+  ArrowRight,
+  Sparkles
 } from "lucide-react";
 
 interface ApiAssessment {
@@ -54,7 +56,7 @@ export default function ProfilePage() {
     fetchAssessments();
   }, []);
 
-  // Merge DB records and local records
+  // Merge DB records and local records dynamically
   const displayRecords = dbRecords.length > 0 ? dbRecords : completedTopics.map((t, idx) => ({
     id: idx + 1,
     topic: t.topic,
@@ -75,6 +77,10 @@ export default function ProfilePage() {
     return [jsonStr];
   };
 
+  const calculatedAccuracy = displayRecords.length > 0
+    ? Math.round(displayRecords.reduce((acc, curr) => acc + curr.overallMasteryScore, 0) / displayRecords.length)
+    : 0;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Header Banner */}
@@ -87,15 +93,15 @@ export default function ProfilePage() {
           />
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-black text-white">
-              {user?.name || "Alex Mercer"}
+              {user?.name || "Student User"}
             </h1>
             <p className="text-xs text-slate-300 flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-emerald-400" />
-              {user?.email || "alex.mercer@edumaster.ai"}
+              {user?.email || "student@edumaster.ai"}
             </p>
             <div className="flex items-center gap-3 text-[11px] text-slate-400 font-semibold pt-1">
               <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-amber-400" /> Joined {user?.joinedDate || "Jan 2024"}
+                <Calendar className="w-3.5 h-3.5 text-amber-400" /> Joined {user?.joinedDate || "Aug 2026"}
               </span>
               <span className="flex items-center gap-1 text-emerald-400">
                 <Database className="w-3.5 h-3.5" /> PostgreSQL Synced
@@ -104,12 +110,12 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Quick Stats Banner */}
+        {/* Quick Stats Banner (Dynamic) */}
         <div className="grid grid-cols-3 gap-4 bg-[#0B0F19] p-4 rounded-2xl border border-slate-800">
           <div className="text-center px-2">
             <div className="text-[10px] uppercase font-bold text-slate-400">Overall Accuracy</div>
             <div className="text-xl font-black text-emerald-400 flex items-center justify-center gap-1 mt-0.5">
-              {stats.overallAccuracy}%
+              {calculatedAccuracy}%
             </div>
           </div>
           <div className="text-center border-x border-slate-800 px-2">
@@ -152,10 +158,10 @@ export default function ProfilePage() {
           <div className="py-12 flex items-center justify-center space-y-2">
             <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
             <span className="text-xs text-slate-400 animate-pulse ml-2">
-              Loading assessments from http://localhost:8080/api/assessments...
+              Loading assessment records from http://localhost:8080/api/assessments...
             </span>
           </div>
-        ) : (
+        ) : displayRecords.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -208,6 +214,26 @@ export default function ProfilePage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          /* Clean Empty State when student has not completed any topic yet */
+          <div className="py-12 px-4 text-center space-y-4 bg-[#0B0F19] rounded-2xl border border-slate-800">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-white">No Assessment Records Found Yet</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Launch the 3-Step Learning Engine to complete your first topic assessment. Your Section A scores, Section B quiz results, and activity heatmap will update here automatically!
+              </p>
+            </div>
+            <a
+              href="/dashboard"
+              className="inline-flex items-center gap-2 emerald-button text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-emerald-glow"
+            >
+              <span>Explore Topics & Launch Engine</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
         )}
       </div>

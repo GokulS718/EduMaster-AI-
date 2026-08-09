@@ -10,29 +10,8 @@ const PORT = process.env.PORT || 8080;
 app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
 
-// Memory store for DB assessments fallback
-let studentAssessments = [
-  {
-    id: 1,
-    topic: "SQL Queries & Inner Joins",
-    level: "Intermediate",
-    step2Score: 1.8,
-    quizScore: 90,
-    overallMasteryScore: 92,
-    missingPointsJson: JSON.stringify(["Filtering order between WHERE and HAVING"]),
-    completedAt: "2026-08-05",
-  },
-  {
-    id: 2,
-    topic: "Operating Systems — Process Synchronization",
-    level: "Advanced",
-    step2Score: 2.0,
-    quizScore: 100,
-    overallMasteryScore: 100,
-    missingPointsJson: JSON.stringify(["Compare-And-Swap lock-free retry mechanics"]),
-    completedAt: "2026-08-07",
-  },
-];
+// Dynamic assessments store (starts empty; populated strictly via student activity)
+let studentAssessments = [];
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", backend: "EduMaster AI Decoupled Java / Node Service", port: PORT });
@@ -60,7 +39,7 @@ app.post("/api/step2-evaluate", async (req, res) => {
   try {
     const result = await evaluateStep2Answer(topicName, answerText, levelName);
     
-    // Save record to DB memory store
+    // Save record dynamically only when student submits
     const newRecord = {
       id: Date.now(),
       topic: topicName,

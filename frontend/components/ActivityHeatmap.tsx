@@ -37,17 +37,17 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
   }
 
   const getColorClass = (count: number) => {
-    if (count === 0) return "bg-slate-900 border border-slate-800 hover:border-slate-600";
-    if (count === 1) return "bg-emerald-950 border border-emerald-800/80 hover:border-emerald-500";
-    if (count === 2) return "bg-emerald-800 border border-emerald-600 hover:border-emerald-400";
-    if (count === 3) return "bg-emerald-600 border border-emerald-400 hover:border-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.35)]";
-    return "bg-emerald-400 border border-emerald-200 hover:border-white shadow-[0_0_12px_rgba(52,211,153,0.65)]";
+    if (count === 0) return "bg-[#0B0F19] border border-slate-800/80 hover:border-slate-600";
+    if (count === 1) return "bg-emerald-950 border border-emerald-800/80 hover:border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.2)]";
+    if (count === 2) return "bg-emerald-800 border border-emerald-600 hover:border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.35)]";
+    if (count === 3) return "bg-emerald-600 border border-emerald-400 hover:border-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]";
+    return "bg-emerald-400 border border-white hover:border-white shadow-[0_0_14px_rgba(52,211,153,0.7)]";
   };
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
-    <div className="glass-card p-6 rounded-3xl border border-slate-700/80 relative overflow-hidden">
+    <div className="glass-card p-6 rounded-3xl relative overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -55,11 +55,11 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
             LeetCode-Style Activity Heatmap
           </h3>
           <p className="text-xs text-slate-300 mt-1">
-            Daily CS sub-topic study contributions & mastery sessions over the past year.
+            Dynamic daily study contributions & topic assessment sessions over the past 52 weeks.
           </p>
         </div>
 
-        <div className="flex items-center gap-4 bg-slate-900 px-4 py-2 rounded-xl border border-slate-700">
+        <div className="flex items-center gap-4 bg-[#0B0F19] px-4 py-2 rounded-xl border border-slate-800">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-emerald-400" />
             <span className="text-xs text-slate-300 font-medium">Total Contributions:</span>
@@ -112,22 +112,24 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
           </div>
 
           {/* Footer Legend & Tooltip readout */}
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-700/60">
+          <div className="mt-4 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800">
             <div className="h-4">
               {hoveredDay ? (
                 <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping" />
                   {hoveredDay.count} contribution{hoveredDay.count === 1 ? "" : "s"} on {hoveredDay.date}
                 </span>
-              ) : (
+              ) : totalContributions > 0 ? (
                 <span className="text-slate-400">Hover over any square for activity breakdown</span>
+              ) : (
+                <span className="text-amber-400 font-medium">No study contributions recorded yet. Complete topic assessments in the engine to populate your heatmap!</span>
               )}
             </div>
 
             <div className="flex items-center gap-2">
               <span className="text-[11px]">Less</span>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-[3px] bg-slate-900 border border-slate-800" />
+                <div className="w-3 h-3 rounded-[3px] bg-[#0B0F19] border border-slate-800" />
                 <div className="w-3 h-3 rounded-[3px] bg-emerald-950 border border-emerald-800" />
                 <div className="w-3 h-3 rounded-[3px] bg-emerald-800 border border-emerald-600" />
                 <div className="w-3 h-3 rounded-[3px] bg-emerald-600 border border-emerald-400" />
