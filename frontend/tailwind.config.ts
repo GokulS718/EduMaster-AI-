@@ -15,9 +15,10 @@ const config: Config = {
           850: "#0E1424",
         },
         slate: {
-          900: "#111827",
-          850: "#1F2937",
-          800: "#374151",
+          950: "#0F172A",
+          900: "#141E2E",
+          800: "#1E293B",
+          700: "#334155",
         },
         emerald: {
           400: "#34D399",
@@ -34,18 +35,15 @@ const config: Config = {
           400: "#FBBF24",
           500: "#F59E0B",
         },
-        violet: {
-          400: "#A78BFA",
-          500: "#8B5CF6",
-        },
-        rose: {
-          400: "#FB7185",
-          500: "#F43F5E",
+        indigo: {
+          300: "#A5B4FC",
+          400: "#818CF8",
+          500: "#6366F1",
         },
       },
       fontFamily: {
-        sans: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
+        sans: ['"Helvetica Neue"', "Helvetica", "Arial", "Calibri", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       boxShadow: {
         "emerald-glow": "0 0 25px -5px rgba(16, 185, 129, 0.4)",

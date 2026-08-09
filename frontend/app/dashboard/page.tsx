@@ -161,8 +161,8 @@ export default function DashboardPage() {
           <span className="text-[10px] uppercase font-bold text-slate-400 block px-1">Select Knowledge Level</span>
           <div className="flex gap-2">
             {[
-              { lvl: "Beginner", color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
-              { lvl: "Intermediate", color: "bg-violet-500/20 text-violet-400 border-violet-500/40" },
+              { lvl: "Easy", color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+              { lvl: "Intermediate", color: "bg-[#818CF8]/20 text-[#818CF8] border-[#818CF8]/40" },
               { lvl: "Advanced", color: "bg-rose-500/20 text-rose-400 border-rose-500/40" },
             ].map((item) => (
               <button
