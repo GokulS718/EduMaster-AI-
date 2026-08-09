@@ -15,7 +15,8 @@ import {
   Loader2,
   Database,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  RotateCcw
 } from "lucide-react";
 
 interface ApiAssessment {
@@ -31,32 +32,34 @@ interface ApiAssessment {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { completedTopics, contributions, stats } = useLearning();
+  const { completedTopics, stats } = useLearning();
 
   const [dbRecords, setDbRecords] = useState<ApiAssessment[]>([]);
   const [loadingDb, setLoadingDb] = useState<boolean>(true);
 
   // Fetch assessment history dynamically from Spring Boot / PostgreSQL REST API (Port 8080)
-  useEffect(() => {
-    async function fetchAssessments() {
-      try {
-        const res = await fetch("http://localhost:8080/api/assessments");
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setDbRecords(data);
-          }
+  const fetchAssessments = async () => {
+    setLoadingDb(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/assessments");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setDbRecords(data);
         }
-      } catch (err) {
-        console.warn("Failed to fetch assessments from Port 8080, using context store:", err);
-      } finally {
-        setLoadingDb(false);
       }
+    } catch (err) {
+      console.warn("Failed to fetch assessments from Port 8080, using context store:", err);
+    } finally {
+      setLoadingDb(false);
     }
+  };
+
+  useEffect(() => {
     fetchAssessments();
   }, []);
 
-  // Merge DB records and local records dynamically
+  // Merge DB records and local context records dynamically
   const displayRecords = dbRecords.length > 0 ? dbRecords : completedTopics.map((t, idx) => ({
     id: idx + 1,
     topic: t.topic,
@@ -67,6 +70,13 @@ export default function ProfilePage() {
     missingPointsJson: JSON.stringify(t.missingPointsReviewed),
     completedAt: t.completedAt,
   }));
+
+  // Build 100% dynamic contributions map from real completed assessment dates
+  const dynamicContributions: Record<string, number> = {};
+  displayRecords.forEach((record) => {
+    const dateStr = record.completedAt || new Date().toISOString().split("T")[0];
+    dynamicContributions[dateStr] = (dynamicContributions[dateStr] || 0) + 1;
+  });
 
   const parseMissingPoints = (jsonStr: string): string[] => {
     if (!jsonStr) return ["Definitions & syntax rules"];
@@ -80,6 +90,13 @@ export default function ProfilePage() {
   const calculatedAccuracy = displayRecords.length > 0
     ? Math.round(displayRecords.reduce((acc, curr) => acc + curr.overallMasteryScore, 0) / displayRecords.length)
     : 0;
+
+  const handleResetHistory = () => {
+    localStorage.removeItem("edumaster_history");
+    localStorage.removeItem("edumaster_contributions");
+    setDbRecords([]);
+    window.location.reload();
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -133,8 +150,8 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* LeetCode / GitHub 52-Week Activity Heatmap */}
-      <ActivityHeatmap contributions={contributions} />
+      {/* LeetCode / GitHub 52-Week Activity Heatmap (100% Dynamic based on real completed topics) */}
+      <ActivityHeatmap contributions={dynamicContributions} onClearHistory={handleResetHistory} />
 
       {/* Completed Topics History Table from Spring Boot / PostgreSQL */}
       <div className="glass-card p-6 rounded-3xl space-y-6">
@@ -148,10 +165,23 @@ export default function ProfilePage() {
               Detailed record of Section A 2-mark scores, Section B quiz scores, and missing technical terms synced with PostgreSQL REST API (Port 8080).
             </p>
           </div>
-          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5" />
-            {displayRecords.length} DB Records
-          </span>
+
+          <div className="flex items-center gap-3">
+            {displayRecords.length > 0 && (
+              <button
+                onClick={handleResetHistory}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs font-bold transition flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset History</span>
+              </button>
+            )}
+
+            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5" />
+              {displayRecords.length} DB Records
+            </span>
+          </div>
         </div>
 
         {loadingDb ? (
@@ -224,7 +254,7 @@ export default function ProfilePage() {
             <div className="space-y-1">
               <h4 className="text-base font-bold text-white">No Assessment Records Found Yet</h4>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Launch the 3-Step Learning Engine to complete your first topic assessment. Your Section A scores, Section B quiz results, and activity heatmap will update here automatically!
+                Launch the 3-Step Learning Engine to complete your first topic assessment. Completing a topic turns today's square Emerald Green on the heatmap!
               </p>
             </div>
             <a

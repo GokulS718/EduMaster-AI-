@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Calendar, Flame } from "lucide-react";
+import { Calendar, Flame, Trash2 } from "lucide-react";
 
 interface ActivityHeatmapProps {
   contributions: Record<string, number>;
+  onClearHistory?: () => void;
 }
 
-export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ contributions, onClearHistory }: ActivityHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<{ date: string; count: number } | null>(null);
 
   const today = new Date();
@@ -38,17 +39,16 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
 
   const getColorClass = (count: number) => {
     if (count === 0) return "bg-[#0B0F19] border border-slate-800/80 hover:border-slate-600";
-    if (count === 1) return "bg-emerald-950 border border-emerald-800/80 hover:border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.2)]";
-    if (count === 2) return "bg-emerald-800 border border-emerald-600 hover:border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.35)]";
-    if (count === 3) return "bg-emerald-600 border border-emerald-400 hover:border-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]";
-    return "bg-emerald-400 border border-white hover:border-white shadow-[0_0_14px_rgba(52,211,153,0.7)]";
+    if (count === 1) return "bg-emerald-500 border border-emerald-400 hover:border-white shadow-[0_0_10px_rgba(16,185,129,0.6)]";
+    if (count === 2) return "bg-emerald-400 border border-white hover:border-white shadow-[0_0_14px_rgba(52,211,153,0.8)]";
+    return "bg-teal-300 border border-white hover:border-white shadow-[0_0_18px_rgba(45,212,191,0.9)]";
   };
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
-    <div className="glass-card p-6 rounded-3xl relative overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="glass-card p-6 rounded-3xl relative overflow-hidden space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Flame className="w-5 h-5 text-amber-400 fill-amber-400" />
@@ -59,8 +59,18 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-4 bg-[#0B0F19] px-4 py-2 rounded-xl border border-slate-800">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {onClearHistory && totalContributions > 0 && (
+            <button
+              onClick={onClearHistory}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/40 text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Reset Contributions</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 bg-[#0B0F19] px-4 py-2 rounded-xl border border-slate-800">
             <Calendar className="w-4 h-4 text-emerald-400" />
             <span className="text-xs text-slate-300 font-medium">Total Contributions:</span>
             <span className="text-sm font-extrabold text-white">{totalContributions}</span>
@@ -122,20 +132,19 @@ export function ActivityHeatmap({ contributions }: ActivityHeatmapProps) {
               ) : totalContributions > 0 ? (
                 <span className="text-slate-400">Hover over any square for activity breakdown</span>
               ) : (
-                <span className="text-amber-400 font-medium">No study contributions recorded yet. Complete topic assessments in the engine to populate your heatmap!</span>
+                <span className="text-amber-400 font-medium">No contributions recorded yet. Completing a topic assessment turns today's square Emerald Green (Count = 1)!</span>
               )}
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[11px]">Less</span>
+              <span className="text-[11px]">0</span>
               <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-[3px] bg-[#0B0F19] border border-slate-800" />
-                <div className="w-3 h-3 rounded-[3px] bg-emerald-950 border border-emerald-800" />
-                <div className="w-3 h-3 rounded-[3px] bg-emerald-800 border border-emerald-600" />
-                <div className="w-3 h-3 rounded-[3px] bg-emerald-600 border border-emerald-400" />
-                <div className="w-3 h-3 rounded-[3px] bg-emerald-400 border border-white" />
+                <div className="w-3.5 h-3.5 rounded-[3px] bg-[#0B0F19] border border-slate-800" />
+                <div className="w-3.5 h-3.5 rounded-[3px] bg-emerald-500 border border-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                <div className="w-3.5 h-3.5 rounded-[3px] bg-emerald-400 border border-white shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
+                <div className="w-3.5 h-3.5 rounded-[3px] bg-teal-300 border border-white shadow-[0_0_10px_rgba(45,212,191,0.9)]" />
               </div>
-              <span className="text-[11px]">More</span>
+              <span className="text-[11px]">3+</span>
             </div>
           </div>
         </div>
