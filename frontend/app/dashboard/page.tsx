@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLearning } from "@/context/LearningContext";
+import { useLearning, KnowledgeLevel } from "@/context/LearningContext";
 import { 
   Search, 
   Sparkles, 
@@ -12,7 +12,10 @@ import {
   Globe, 
   ArrowRight, 
   Zap,
-  BookOpen
+  Code2,
+  Terminal,
+  Layers,
+  CheckCircle2
 } from "lucide-react";
 
 interface Subtopic {
@@ -29,34 +32,35 @@ interface SubjectCard {
   subtopics: Subtopic[];
 }
 
-const SUBJECT_CARDS: SubjectCard[] = [
+const ALL_SUBJECT_CARDS: SubjectCard[] = [
   {
-    id: "dbms",
+    id: "sql",
     category: "SQL & Relational Databases",
     icon: Database,
     color: "from-emerald-600 to-teal-600",
-    description: "Master SQL queries, joins, subqueries, grouping, aggregate functions, and B+ tree indexes.",
+    description: "Master SELECT queries, joins, subqueries, grouping, aggregate functions, and B+ tree indexes.",
     subtopics: [
       { name: "SQL Select, Filtering & Expressions", description: "SELECT, WHERE, column aliases, pattern matching." },
       { name: "SQL Joins (INNER, LEFT, RIGHT, FULL)", description: "Multi-table relational joins, foreign key matching." },
       { name: "SQL Group By & Having Clauses", description: "Summarizing data rows and filtering aggregated groups." },
-      { name: "Database Normalization (1NF to BCNF)", description: "Functional dependencies, candidate keys, loss-less join." },
+      { name: "Clustered B+ Tree Indexing", description: "Doubly-linked leaf nodes and fast range scan queries." },
     ],
   },
   {
     id: "os",
     category: "Operating Systems",
     icon: Cpu,
-    color: "from-indigo-600 to-emerald-600",
-    description: "Master process control, semaphores, deadlock algorithms, and virtual memory paging.",
+    color: "from-indigo-600 to-teal-600",
+    description: "Master process scheduling, semaphores, deadlock prevention, and virtual memory paging.",
     subtopics: [
-      { name: "Process Synchronization & Semaphores", description: "Critical sections, Mutex locks, Counting Semaphores." },
-      { name: "Deadlocks & Banker's Algorithm", description: "4 Coffman conditions, deadlock prevention, RAG graphs." },
-      { name: "Virtual Memory & Paging", description: "Page tables, Translation Lookaside Buffer (TLB), LRU." },
+      { name: "Process Scheduling & Context Switching", description: "Round Robin, Priority, Multilevel Feedback Queue." },
+      { name: "Critical Section & Semaphores", description: "Mutex locks, Counting Semaphores, Peterson's Algorithm." },
+      { name: "Deadlocks & Prevention", description: "4 Coffman conditions, Banker's Algorithm, RAG graphs." },
+      { name: "Paging & Virtual Memory", description: "Page tables, Translation Lookaside Buffer (TLB), LRU." },
     ],
   },
   {
-    id: "ds",
+    id: "dsa",
     category: "Data Structures & Algorithms",
     icon: Network,
     color: "from-amber-600 to-emerald-600",
@@ -65,13 +69,14 @@ const SUBJECT_CARDS: SubjectCard[] = [
       { name: "Trees & Self-Balancing BSTs", description: "AVL Trees, Red-Black Trees color rotations, B-Trees." },
       { name: "Graph Algorithms & Shortest Path", description: "Dijkstra's Algorithm, Bellman-Ford, BFS/DFS, MST." },
       { name: "Hashing & Collision Resolution", description: "Hash functions, Separate Chaining, Open Addressing." },
+      { name: "Dynamic Programming & Memoization", description: "Optimal substructure, overlapping subproblems." },
     ],
   },
   {
     id: "cn",
     category: "Computer Networks",
     icon: Globe,
-    color: "from-teal-600 to-indigo-600",
+    color: "from-cyan-600 to-emerald-600",
     description: "Layered protocol stack, TCP connection handshake, and CIDR subnetting.",
     subtopics: [
       { name: "TCP/IP Protocol Suite & 3-Way Handshake", description: "SYN/ACK connection establishment, sliding window." },
@@ -79,16 +84,53 @@ const SUBJECT_CARDS: SubjectCard[] = [
       { name: "Subnetting & CIDR Addressing", description: "IPv4 subnets, Subnet Mask calculation, CIDR notation." },
     ],
   },
+  {
+    id: "java",
+    category: "Java Programming & Concurrency",
+    icon: Terminal,
+    color: "from-teal-600 to-emerald-600",
+    description: "OOP fundamentals, multithreading synchronization, collections framework, and JVM memory.",
+    subtopics: [
+      { name: "Object-Oriented Programming (OOP)", description: "Inheritance, Polymorphism, Abstraction, Encapsulation." },
+      { name: "Java Multithreading & ExecutorService", description: "Synchronized blocks, Volatile variables, Thread Pools." },
+      { name: "Collections Framework & Generics", description: "ArrayList, HashMap bucket distribution, ConcurrentHashMap." },
+    ],
+  },
+  {
+    id: "python",
+    category: "Python & Data Engineering",
+    icon: Code2,
+    color: "from-emerald-600 to-cyan-600",
+    description: "Pythonic data structures, list comprehensions, decorators, generators, and Pandas workflows.",
+    subtopics: [
+      { name: "Pythonic Control Flow & Generators", description: "Yield expressions, iterators, list comprehensions." },
+      { name: "Decorators & Metaprogramming", description: "Function wrappers, class decorators, args/kwargs." },
+      { name: "Data Manipulation with Pandas & NumPy", description: "DataFrames, vectorization, indexing, groupby." },
+    ],
+  },
+  {
+    id: "webdev",
+    category: "Full-Stack Web Development",
+    icon: Layers,
+    color: "from-violet-600 to-emerald-600",
+    description: "Modern Async JS/TS, React Hooks, Next.js Server Components, and REST/GraphQL API design.",
+    subtopics: [
+      { name: "Async JavaScript & Event Loop", description: "Promises, Async/Await, Microtask queue, Call stack." },
+      { name: "React State & Custom Hooks", description: "useState, useEffect, useReducer, custom hook patterns." },
+      { name: "REST API & HTTP Fundamentals", description: "HTTP methods, status codes, CORS, JWT authentication." },
+    ],
+  },
 ];
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { startEngineWithTopic } = useLearning();
+  const { startEngineWithTopic, setLevel } = useLearning();
   const [customTopic, setCustomTopic] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState<KnowledgeLevel>("Intermediate");
 
   const handleTopicSelect = (topicName: string) => {
     if (!topicName.trim()) return;
-    startEngineWithTopic(topicName.trim());
+    startEngineWithTopic(topicName.trim(), selectedLevel);
     router.push("/engine");
   };
 
@@ -101,37 +143,52 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-card p-8 rounded-3xl border border-slate-700/80 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-card p-8 rounded-3xl relative overflow-hidden">
         <div className="space-y-2 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase">
-            <Sparkles className="w-3.5 h-3.5" /> Topic Hub Dashboard
+            <Sparkles className="w-3.5 h-3.5" /> Topic Hub Explorer
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Explore CS Core Subjects
+            Explore All CS & IT Topics
           </h1>
           <p className="text-sm text-slate-300">
-            Select any pre-configured core topic below or type your custom topic to launch the 3-Stage Sub-Topic Engine.
+            Select your knowledge level and pick any computer science subject below, or type a custom topic to launch the scrolling 3-step engine.
           </p>
         </div>
 
-        {/* Quick Stats Pill */}
-        <div className="flex items-center gap-4 bg-slate-900/90 p-4 rounded-2xl border border-slate-700 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <Zap className="w-5 h-5 fill-amber-400" />
-          </div>
-          <div>
-            <div className="text-xs text-slate-400 font-medium">Ready for Evaluation</div>
-            <div className="text-sm font-bold text-white">4 Core Modules • 14 Sub-Topics</div>
+        {/* Knowledge Level Selector */}
+        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2 shrink-0">
+          <span className="text-[10px] uppercase font-bold text-slate-400 block px-1">Select Knowledge Level</span>
+          <div className="flex gap-2">
+            {[
+              { lvl: "Beginner", color: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
+              { lvl: "Intermediate", color: "bg-violet-500/20 text-violet-400 border-violet-500/40" },
+              { lvl: "Advanced", color: "bg-rose-500/20 text-rose-400 border-rose-500/40" },
+            ].map((item) => (
+              <button
+                key={item.lvl}
+                onClick={() => {
+                  const l = item.lvl as KnowledgeLevel;
+                  setSelectedLevel(l);
+                  setLevel(l);
+                }}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition ${
+                  selectedLevel === item.lvl
+                    ? `${item.color} shadow-lg scale-105`
+                    : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                {item.lvl}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Custom Topic Input Bar */}
-      <div className="glass-card p-6 rounded-2xl border border-slate-700/80 space-y-3">
+      <div className="glass-card p-6 rounded-2xl space-y-3">
         <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-          Custom Topic Launcher
+          Custom CS / IT Topic Launcher
         </label>
         <form onSubmit={handleCustomSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-grow">
@@ -140,63 +197,58 @@ export default function DashboardPage() {
               type="text"
               value={customTopic}
               onChange={(e) => setCustomTopic(e.target.value)}
-              placeholder="Type any topic to start learning... (e.g. SQL Joins & Aggregates, Cache Coherence, Raft Consensus)"
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+              placeholder="Type any CS/IT topic (e.g. Cache Coherence Protocols, Raft Consensus, Trie Ingestion, Distributed Systems)..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
             />
           </div>
           <button
             type="submit"
             className="emerald-button text-white px-6 py-3 rounded-xl font-bold text-sm shadow-emerald-glow flex items-center justify-center gap-2 shrink-0"
           >
-            <span>Launch Engine</span>
+            <span>Launch Engine ({selectedLevel})</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       </div>
 
       {/* Subject Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {SUBJECT_CARDS.map((subject) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {ALL_SUBJECT_CARDS.map((subject) => {
           const Icon = subject.icon;
           return (
             <div
               key={subject.id}
-              className="glass-card p-6 rounded-3xl border border-slate-700/80 space-y-6 hover:border-slate-600 transition"
+              className="glass-card p-6 rounded-3xl border border-slate-800 flex flex-col justify-between space-y-6 hover:border-emerald-500/40 transition"
             >
               {/* Category Header */}
-              <div className="flex items-start gap-4">
-                <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${subject.color} shadow-lg text-white`}>
-                  <Icon className="w-6 h-6" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-2xl bg-gradient-to-br ${subject.color} shadow-lg text-white`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white leading-tight">{subject.category}</h3>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">{subject.category}</h3>
-                  <p className="text-xs text-slate-300 mt-1">{subject.description}</p>
-                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">{subject.description}</p>
               </div>
 
               {/* Subtopics List */}
-              <div className="space-y-3 pt-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                  Pre-configured Sub-Topics
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">
+                  Sub-Topics
                 </span>
-                <div className="space-y-2.5">
+                <div className="space-y-2 pt-1">
                   {subject.subtopics.map((subtopic) => (
                     <button
                       key={subtopic.name}
                       onClick={() => handleTopicSelect(`${subject.category} - ${subtopic.name}`)}
-                      className="w-full text-left p-4 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-emerald-500 hover:bg-slate-750 transition-all duration-200 group flex items-center justify-between"
+                      className="w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500 hover:bg-slate-900 transition-all duration-200 group flex items-center justify-between"
                     >
-                      <div className="pr-4 space-y-1">
-                        <h4 className="text-sm font-bold text-slate-100 group-hover:text-emerald-400 transition">
+                      <div className="pr-2">
+                        <h4 className="text-xs font-bold text-slate-200 group-hover:text-emerald-400 transition">
                           {subtopic.name}
                         </h4>
-                        <p className="text-xs text-slate-400 line-clamp-1">
-                          {subtopic.description}
-                        </p>
                       </div>
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-600 flex items-center justify-center text-emerald-400 group-hover:text-white shrink-0 transition">
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
-                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0" />
                     </button>
                   ))}
                 </div>

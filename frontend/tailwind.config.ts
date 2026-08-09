@@ -9,39 +9,47 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        obsidian: {
+          950: "#030712",
+          900: "#0B0F19",
+          850: "#0E1424",
+        },
         slate: {
-          900: "#0F172A",
-          850: "#172033",
-          800: "#1E293B",
-          750: "#27354A",
-          700: "#334155",
-          600: "#475569",
+          900: "#111827",
+          850: "#1F2937",
+          800: "#374151",
         },
         emerald: {
           400: "#34D399",
           500: "#10B981",
           600: "#059669",
-          700: "#047857",
+        },
+        teal: {
+          300: "#5EEAD4",
+          400: "#2DD4BF",
+          500: "#14B8A6",
+          600: "#0D9488",
         },
         amber: {
           400: "#FBBF24",
           500: "#F59E0B",
-          600: "#D97706",
         },
-        indigo: {
-          300: "#A5B4FC",
-          400: "#818CF8",
-          500: "#6366F1",
+        violet: {
+          400: "#A78BFA",
+          500: "#8B5CF6",
+        },
+        rose: {
+          400: "#FB7185",
+          500: "#F43F5E",
         },
       },
-      backgroundImage: {
-        "slate-gradient": "linear-gradient(180deg, #0F172A 0%, #1E293B 100%)",
-        "emerald-gradient": "linear-gradient(135deg, #10B981 0%, #059669 100%)",
-        "grid-pattern": "radial-gradient(rgba(16, 185, 129, 0.12) 1.5px, transparent 1.5px)",
+      fontFamily: {
+        sans: ["var(--font-plus-jakarta)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        "emerald-glow": "0 0 20px -3px rgba(16, 185, 129, 0.35)",
-        "emerald-strong": "0 0 30px 2px rgba(5, 150, 105, 0.5)",
+        "emerald-glow": "0 0 25px -5px rgba(16, 185, 129, 0.4)",
+        "emerald-strong": "0 0 35px 2px rgba(13, 148, 136, 0.55)",
       },
     },
   },

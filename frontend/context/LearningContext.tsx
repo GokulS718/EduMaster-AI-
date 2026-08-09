@@ -9,6 +9,8 @@ export interface SubTopicLesson {
   title: string;
   content: string;
   codeExample?: string;
+  codeLanguage?: string;
+  question?: string;
 }
 
 export interface MCQQuestion {
