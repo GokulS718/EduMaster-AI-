@@ -7,17 +7,11 @@ async function handleStep1Teach(req, res) {
       return res.status(400).json({ error: "Topic is required" });
     }
 
-    const initialLesson = await generateStep1Lesson(topic, level || "Intermediate");
-    return res.json({ initialLesson });
+    const data = await generateStep1Lesson(topic, level || "Intermediate");
+    return res.json(data);
   } catch (err) {
     console.error("Error in handleStep1Teach:", err);
-    return res.status(500).json({
-      initialLesson: [
-        "Core Architectural Concept: State machine transitions and synchronized flow.",
-        "Key Operational Mechanics: Algorithmic time-space tradeoffs and atomic invariants.",
-        "Practical Engineering Insight: Bottleneck mitigation via caching and lock-free queues."
-      ]
-    });
+    return res.status(500).json({ error: "Failed to process Step 1 teaching" });
   }
 }
 

@@ -10,17 +10,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Topic is required" }, { status: 400 });
     }
 
-    const lessonBullets = await generateStep1Lesson(topic, level || "Intermediate");
-    return NextResponse.json({ initialLesson: lessonBullets });
+    const data = await generateStep1Lesson(topic, level || "Intermediate");
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Error in step1-teach frontend route:", error);
     return NextResponse.json(
       {
-        initialLesson: [
-          "Core Architectural Concept: State machine transitions and synchronized flow.",
-          "Key Operational Mechanics: Algorithmic time-space tradeoffs and atomic invariants.",
-          "Practical Engineering Insight: Bottleneck mitigation via caching and lock-free queues."
+        subTopics: [
+          {
+            id: "st-1",
+            title: "Core Mechanics",
+            content: "State machine transitions and synchronized execution flow.",
+            codeExample: "SELECT * FROM core_table WHERE status = 'ACTIVE';"
+          }
         ],
+        twoMarkQuestion: "Explain the primary difference between pre-filtering and post-aggregation filtering."
       },
       { status: 200 }
     );
