@@ -32,6 +32,7 @@ const config: Config = {
           600: "#0D9488",
         },
         amber: {
+          300: "#FCD34D",
           400: "#FBBF24",
           500: "#F59E0B",
         },
@@ -42,7 +43,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['"Helvetica Neue"', "Helvetica", "Arial", "Calibri", "sans-serif"],
+        sans: ['"Plus Jakarta Sans"', "Helvetica", "Arial", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       boxShadow: {

@@ -21,16 +21,19 @@ public class GeminiService {
     public Map<String, Object> generateStep1Lesson(String topic, String level) {
         if (apiKey != null && !apiKey.isEmpty()) {
             try {
-                String prompt = "You are EduMaster AI, an elite Computer Science professor writing W3Schools-style educational tutorials.\n\n" +
+                String prompt = "You are EduMaster AI, an elite Computer Science professor writing intuitive, student-friendly tutorials.\n\n" +
                         "TOPIC TO TEACH: \"" + topic + "\"\n" +
-                        "KNOWLEDGE LEVEL: \"" + level + "\"\n\n" +
-                        "STRICT PROMPT INSTRUCTIONS:\n" +
+                        "ACTIVE LEVEL DEPTH: \"" + level + "\"\n\n" +
+                        "STRICT ADAPTATION RULES BASED ON ACTIVE LEVEL DEPTH (\"" + level + "\"):\n" +
+                        "- EASY LEVEL: Use simple real-world analogies, 3 clear bullet points, beginner terminology, step-by-step code snippets.\n" +
+                        "- INTERMEDIATE LEVEL: Include university exam definitions, standard syntax rules, execution order, and common query/code design patterns.\n" +
+                        "- ADVANCED LEVEL: Include low-level execution mechanics, memory allocation, lock contention, edge cases, time/space complexity (O(N)), and production system optimizations.\n\n" +
+                        "QUALITY ASSURANCE GUARANTEES:\n" +
                         "1. ABSOLUTELY FORBID ALL GENERIC TEMPLATE TEXT! Never output filler phrases like \"organizes execution state into deterministic units\".\n" +
-                        "2. Require real, highly specific, subject-tailored educational content with actual syntax, real code, and step-by-step mechanics.\n" +
-                        "3. Adapt Depth Based on Level (\"" + level + "\"): Easy (analogies & basic syntax), Intermediate (syntax rules & patterns), Advanced (concurrency, Big-O, edge cases).\n" +
-                        "4. Provide 4 to 5 Sub-Topics. For each, include: id (number), title, overview, detailedExplanation, keyRules (array of 3 rules), codeExample (runnable code), question (2-mark question).\n\n" +
+                        "2. REQUIRE real, highly specific, subject-tailored educational content with actual syntax and runnable code for \"" + topic + "\".\n" +
+                        "3. Provide 4 to 5 Sub-Topics. For each sub-topic, include TWO (2) 2-mark university questions testing THAT SUB-TOPIC ONLY (question1 and question2).\n\n" +
                         "Return ONLY valid JSON matching schema:\n" +
-                        "{\n  \"subTopics\": [\n    {\n      \"id\": 1,\n      \"title\": \"Title\",\n      \"overview\": \"Overview\",\n      \"detailedExplanation\": \"Detailed explanation\",\n      \"keyRules\": [\"Rule 1\", \"Rule 2\", \"Rule 3\"],\n      \"codeExample\": \"Code\",\n      \"question\": \"2-mark question\"\n    }\n  ]\n}";
+                        "{\n  \"subTopics\": [\n    {\n      \"id\": 1,\n      \"title\": \"Title\",\n      \"overview\": \"Overview\",\n      \"detailedExplanation\": \"Detailed explanation\",\n      \"keyRules\": [\"Rule 1\", \"Rule 2\", \"Rule 3\"],\n      \"codeExample\": \"Code\",\n      \"question1\": \"Question 1\",\n      \"question2\": \"Question 2\"\n    }\n  ]\n}";
 
                 String jsonResponse = callGeminiApi(prompt);
                 if (jsonResponse != null) {
@@ -57,7 +60,7 @@ public class GeminiService {
             res.put("score", 0.0);
             res.put("maxScore", 2.0);
             res.put("missingPoints", List.of(
-                    "Answer is invalid or too short. Single characters, gibberish, or incomplete phrases receive 0.0 marks.",
+                    "Answer is invalid or incomplete. Single characters, gibberish, or short answers under 5 characters receive 0.0 marks.",
                     "Must specify clear technical definitions, execution mechanics, or syntax rules."
             ));
             res.put("targetedReTeaching", List.of(
@@ -139,39 +142,43 @@ public class GeminiService {
 
         Map<String, Object> st1 = new HashMap<>();
         st1.put("id", 1);
-        st1.put("title", topic + " — Principles & Architecture");
-        st1.put("overview", "Analogy: Think of " + topic + " like an air traffic control system managing flight schedules so no collisions occur.");
-        st1.put("detailedExplanation", "In computer science, " + topic + " provides the core operational abstraction governing system state, memory mapping, and resource scheduling at the " + level + " tier.");
-        st1.put("keyRules", List.of("Rule 1: Deterministic state transitions", "Rule 2: Atomic context switching", "Rule 3: Protection bounds"));
+        st1.put("title", topic + " — Select & Filtering Principles");
+        st1.put("overview", "Analogy: Imagine searching a library catalog. SELECT picks specific columns, while WHERE filters books published after a certain year.");
+        st1.put("detailedExplanation", "In computer science, " + topic + " provides the core operational abstraction governing attribute retrieval and row filtering at the " + level + " tier.");
+        st1.put("keyRules", List.of("Rule 1: Execution Order (WHERE precedes SELECT)", "Rule 2: Pattern Matching with LIKE", "Rule 3: NULL evaluation rules"));
         st1.put("codeExample", "SELECT student_id, name, score \nFROM students \nWHERE score >= 85 \nORDER BY score DESC;");
-        st1.put("question", "What is the primary role of resource scheduling in " + topic + "?");
+        st1.put("question1", "Explain the main purpose of the WHERE clause in a SELECT query.");
+        st1.put("question2", "What happens when an equality operator (= NULL) evaluates a NULL value?");
 
         Map<String, Object> st2 = new HashMap<>();
         st2.put("id", 2);
-        st2.put("title", topic + " — Concurrency & Synchronization");
-        st2.put("overview", "Analogy: Imagine a fitting room with a lock indicator. Only one person enters at a time.");
-        st2.put("detailedExplanation", "Concurrent execution leads to race conditions without mutex locks and atomic compare-and-swap (CAS) memory operations.");
-        st2.put("keyRules", List.of("Rule 1: Mutual Exclusion", "Rule 2: Lock Ordering", "Rule 3: Atomic Memory Swaps"));
+        st2.put("title", topic + " — Relational INNER JOIN & Foreign Keys");
+        st2.put("overview", "Analogy: Matching passport numbers to flight booking records.");
+        st2.put("detailedExplanation", "An INNER JOIN merges tuples from two tables based on a foreign key predicate. Unmatched rows are omitted.");
+        st2.put("keyRules", List.of("Rule 1: ON clause specifies join predicates", "Rule 2: Use short table aliases", "Rule 3: Indexing foreign key columns speeds up joins"));
         st2.put("codeExample", "SELECT e.emp_name, d.dept_name \nFROM employees e \nINNER JOIN departments d ON e.dept_id = d.id;");
-        st2.put("question", "How do atomic Compare-And-Swap (CAS) instructions enable lock-free concurrency?");
+        st2.put("question1", "What is the key functional difference between an INNER JOIN and a LEFT JOIN?");
+        st2.put("question2", "Why is it important to index foreign key columns when performing joins?");
 
         Map<String, Object> st3 = new HashMap<>();
         st3.put("id", 3);
         st3.put("title", topic + " — Grouping & Aggregate Operations");
-        st3.put("overview", "Analogy: Sorting mixed coins by denomination and filtering out stacks under 5 coins.");
+        st3.put("overview", "Analogy: Sorting mixed coins into denomination stacks and filtering out stacks under 5 coins.");
         st3.put("detailedExplanation", "GROUP BY aggregates rows sharing key values. HAVING filters aggregate values AFTER grouping takes place.");
         st3.put("keyRules", List.of("Rule 1: SELECT items must match GROUP BY", "Rule 2: HAVING evaluates post-aggregation", "Rule 3: Aggregate functions ignore NULLs"));
         st3.put("codeExample", "SELECT dept_id, COUNT(*) AS total \nFROM staff \nGROUP BY dept_id \nHAVING COUNT(*) >= 5;");
-        st3.put("question", "Explain why aggregate functions cannot be placed inside a WHERE clause.");
+        st3.put("question1", "Explain why aggregate functions like AVG() cannot be placed inside a WHERE clause.");
+        st3.put("question2", "Explain the rule regarding non-aggregated columns in SELECT statements with GROUP BY.");
 
         Map<String, Object> st4 = new HashMap<>();
         st4.put("id", 4);
-        st4.put("title", topic + " — Indexing & Algorithmic Complexity");
+        st4.put("title", topic + " — B+ Tree Indexing & Range Execution");
         st4.put("overview", "Analogy: An index at the back of a textbook allowing instant page range access.");
         st4.put("detailedExplanation", "B+ Trees store data pointers in leaf nodes linked by doubly-linked pointers for fast O(log N) lookup and sequential range scans.");
         st4.put("keyRules", List.of("Rule 1: Doubly-linked leaf range scans", "Rule 2: Composite index prefix rule", "Rule 3: Bounded memory overhead"));
         st4.put("codeExample", "CREATE INDEX idx_staff_dept \nON staff (dept_id, salary DESC);");
-        st4.put("question", "How do doubly-linked leaf nodes in a B+ Tree index optimize sequential range queries?");
+        st4.put("question1", "How do doubly-linked leaf nodes in a B+ Tree index optimize sequential range queries?");
+        st4.put("question2", "Explain the Leftmost Prefix Rule when using multi-column composite indexes.");
 
         subTopics.add(st1);
         subTopics.add(st2);

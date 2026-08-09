@@ -11,7 +11,8 @@ export interface SubTopicLesson {
   detailedExplanation: string;
   keyRules: string[];
   codeExample: string;
-  question?: string;
+  question1?: string;
+  question2?: string;
 }
 
 export interface MCQQuestion {
@@ -81,7 +82,7 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
           completedAt: "2026-08-05",
         },
         {
-          id: "hist-[#2]",
+          id: "hist-2",
           topic: "Operating Systems — Process Synchronization",
           level: "Advanced",
           step2Score: 2.0,
