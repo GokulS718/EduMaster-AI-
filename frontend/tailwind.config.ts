@@ -9,28 +9,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#090d16",
-        foreground: "#f8fafc",
-        electric: {
-          400: "#60a5fa",
-          500: "#3b82f6",
-          600: "#2563eb",
-          700: "#1d4ed8",
-        },
         slate: {
-          850: "#0f172a",
-          900: "#0b1120",
-          950: "#050811",
+          900: "#0F172A",
+          850: "#172033",
+          800: "#1E293B",
+          750: "#27354A",
+          700: "#334155",
+          600: "#475569",
+        },
+        emerald: {
+          400: "#34D399",
+          500: "#10B981",
+          600: "#059669",
+          700: "#047857",
+        },
+        amber: {
+          400: "#FBBF24",
+          500: "#F59E0B",
+          600: "#D97706",
+        },
+        indigo: {
+          300: "#A5B4FC",
+          400: "#818CF8",
+          500: "#6366F1",
         },
       },
       backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "grid-pattern": "radial-gradient(rgba(59, 130, 246, 0.12) 1px, transparent 1px)",
-        "glow-gradient": "radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.15), transparent 70%)",
+        "slate-gradient": "linear-gradient(180deg, #0F172A 0%, #1E293B 100%)",
+        "emerald-gradient": "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+        "grid-pattern": "radial-gradient(rgba(16, 185, 129, 0.12) 1.5px, transparent 1.5px)",
       },
       boxShadow: {
-        "electric-glow": "0 0 25px -5px rgba(59, 130, 246, 0.3)",
-        "electric-strong": "0 0 35px 2px rgba(37, 99, 235, 0.45)",
+        "emerald-glow": "0 0 20px -3px rgba(16, 185, 129, 0.35)",
+        "emerald-strong": "0 0 30px 2px rgba(5, 150, 105, 0.5)",
       },
     },
   },

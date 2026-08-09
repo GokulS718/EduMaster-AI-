@@ -4,6 +4,13 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type KnowledgeLevel = "Beginner" | "Intermediate" | "Advanced";
 
+export interface SubTopicLesson {
+  id: string;
+  title: string;
+  content: string;
+  codeExample?: string;
+}
+
 export interface MCQQuestion {
   id: number;
   question: string;
@@ -25,8 +32,8 @@ export interface CompletedTopicRecord {
   topic: string;
   level: KnowledgeLevel;
   step2Score: number;
-  quizScore: number; // percentage e.g. 100
-  overallMasteryScore: number; // percentage e.g. 92
+  quizScore: number;
+  overallMasteryScore: number;
   missingPointsReviewed: string[];
   completedAt: string;
 }
@@ -39,8 +46,10 @@ interface LearningContextType {
   activeStep: 1 | 2 | 3;
   setActiveStep: (step: 1 | 2 | 3) => void;
   
-  step1Lesson: string[] | null;
-  setStep1Lesson: (lesson: string[] | null) => void;
+  subTopics: SubTopicLesson[];
+  setSubTopics: (subTopics: SubTopicLesson[]) => void;
+  twoMarkQuestion: string;
+  setTwoMarkQuestion: (q: string) => void;
   
   step2Evaluation: Step2EvaluationResult | null;
   setStep2Evaluation: (evalData: Step2EvaluationResult | null) => void;
@@ -48,7 +57,7 @@ interface LearningContextType {
   completedTopics: CompletedTopicRecord[];
   addCompletedTopic: (record: Omit<CompletedTopicRecord, "id" | "completedAt">) => void;
   
-  contributions: Record<string, number>; // date string YYYY-MM-DD -> activity count
+  contributions: Record<string, number>;
   stats: {
     overallAccuracy: number;
     totalTopicsMastered: number;
@@ -63,22 +72,22 @@ const LearningContext = createContext<LearningContextType | undefined>(undefined
 const INITIAL_COMPLETED_TOPICS: CompletedTopicRecord[] = [
   {
     id: "hist-1",
-    topic: "Operating Systems - Process Synchronization & Semaphores",
+    topic: "SQL Queries, Joins & Grouping",
     level: "Intermediate",
     step2Score: 1.8,
     quizScore: 100,
     overallMasteryScore: 95,
-    missingPointsReviewed: ["Mutex vs Counting Semaphore distinction", "Priority Inversion handling"],
+    missingPointsReviewed: ["WHERE vs HAVING clause ordering distinction", "NULL values handling in aggregate AVG()"],
     completedAt: "2026-08-08",
   },
   {
     id: "hist-2",
-    topic: "Data Structures - Red-Black Trees Balancing",
+    topic: "Operating Systems - Process Synchronization",
     level: "Advanced",
     step2Score: 1.5,
-    quizScore: 66,
-    overallMasteryScore: 84,
-    missingPointsReviewed: ["Color rotation rules on insertion", "Tree height logarithmic bounds"],
+    quizScore: 83,
+    overallMasteryScore: 88,
+    missingPointsReviewed: ["Mutex vs Counting Semaphore ownership", "Priority Inversion inheritance protocol"],
     completedAt: "2026-08-07",
   },
   {
@@ -88,7 +97,7 @@ const INITIAL_COMPLETED_TOPICS: CompletedTopicRecord[] = [
     step2Score: 2.0,
     quizScore: 100,
     overallMasteryScore: 100,
-    missingPointsReviewed: ["Sequential scan efficiency of linked leaf nodes"],
+    missingPointsReviewed: ["Sequential scan efficiency of doubly linked leaf nodes"],
     completedAt: "2026-08-05",
   },
   {
@@ -104,11 +113,12 @@ const INITIAL_COMPLETED_TOPICS: CompletedTopicRecord[] = [
 ];
 
 export function LearningProvider({ children }: { children: React.ReactNode }) {
-  const [selectedTopic, setSelectedTopic] = useState<string>("Process Synchronization & Deadlocks");
+  const [selectedTopic, setSelectedTopic] = useState<string>("SQL Queries & Relational DBMS");
   const [level, setLevel] = useState<KnowledgeLevel>("Intermediate");
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   
-  const [step1Lesson, setStep1Lesson] = useState<string[] | null>(null);
+  const [subTopics, setSubTopics] = useState<SubTopicLesson[]>([]);
+  const [twoMarkQuestion, setTwoMarkQuestion] = useState<string>("");
   const [step2Evaluation, setStep2Evaluation] = useState<Step2EvaluationResult | null>(null);
   
   const [completedTopics, setCompletedTopics] = useState<CompletedTopicRecord[]>(INITIAL_COMPLETED_TOPICS);
@@ -173,7 +183,8 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     setSelectedTopic(topic);
     setLevel(lvl);
     setActiveStep(1);
-    setStep1Lesson(null);
+    setSubTopics([]);
+    setTwoMarkQuestion("");
     setStep2Evaluation(null);
   };
 
@@ -197,8 +208,10 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
         setLevel,
         activeStep,
         setActiveStep,
-        step1Lesson,
-        setStep1Lesson,
+        subTopics,
+        setSubTopics,
+        twoMarkQuestion,
+        setTwoMarkQuestion,
         step2Evaluation,
         setStep2Evaluation,
         completedTopics,
