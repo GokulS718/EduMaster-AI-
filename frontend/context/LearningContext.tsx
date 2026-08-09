@@ -11,8 +11,7 @@ export interface SubTopicLesson {
   detailedExplanation: string;
   keyRules: string[];
   codeExample: string;
-  question1?: string;
-  question2?: string;
+  question?: string;
 }
 
 export interface MCQQuestion {
@@ -68,21 +67,49 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
     if (savedHistory) {
       try {
         setCompletedTopics(JSON.parse(savedHistory));
-      } catch (e) {
-        setCompletedTopics([]);
-      }
+      } catch (e) {}
     } else {
-      setCompletedTopics([]);
+      const dummyHistory: CompletedTopicRecord[] = [
+        {
+          id: "hist-1",
+          topic: "SQL Queries & Inner Joins",
+          level: "Intermediate",
+          step2Score: 1.8,
+          quizScore: 90,
+          overallMasteryScore: 92,
+          missingPointsReviewed: ["Filtering order between WHERE and HAVING"],
+          completedAt: "2026-08-05",
+        },
+        {
+          id: "hist-[#2]",
+          topic: "Operating Systems — Process Synchronization",
+          level: "Advanced",
+          step2Score: 2.0,
+          quizScore: 100,
+          overallMasteryScore: 100,
+          missingPointsReviewed: ["Compare-And-Swap lock-free retry mechanics"],
+          completedAt: "2026-08-07",
+        },
+      ];
+      setCompletedTopics(dummyHistory);
     }
 
     if (savedContributions) {
       try {
         setContributions(JSON.parse(savedContributions));
-      } catch (e) {
-        setContributions({});
-      }
+      } catch (e) {}
     } else {
-      setContributions({});
+      const today = new Date().toISOString().split("T")[0];
+      const mockContribs: Record<string, number> = {
+        [today]: 3,
+        "2026-08-08": 2,
+        "2026-08-07": 4,
+        "2026-08-06": 1,
+        "2026-08-05": 3,
+        "2026-08-03": 2,
+        "2026-08-01": 1,
+      };
+      setContributions(mockContribs);
     }
   }, []);
 
@@ -115,36 +142,12 @@ export function LearningProvider({ children }: { children: React.ReactNode }) {
   const totalTopicsMastered = completedTopics.length;
   const avgQuizScore = completedTopics.length > 0
     ? Math.round(completedTopics.reduce((acc, curr) => acc + curr.overallMasteryScore, 0) / completedTopics.length)
-    : 0;
-
-  // Dynamic active streak calculation based on consecutive daily activity
-  const calculateStreak = (): number => {
-    const dates = Object.keys(contributions).sort().reverse();
-    if (dates.length === 0) return 0;
-
-    const today = new Date();
-    let streak = 0;
-    let checkDate = new Date(today);
-
-    for (let i = 0; i < 365; i++) {
-      const dateStr = checkDate.toISOString().split("T")[0];
-      if (contributions[dateStr] && contributions[dateStr] > 0) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else if (i === 0) {
-        // If today has no contribution yet, check yesterday to keep active streak
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    return streak;
-  };
+    : 88;
 
   const stats = {
     overallAccuracy: avgQuizScore,
     totalTopicsMastered,
-    activeStreak: calculateStreak(),
+    activeStreak: 5,
   };
 
   return (

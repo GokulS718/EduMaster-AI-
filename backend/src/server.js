@@ -1,71 +1,37 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-
-const { generateStep1Lesson, evaluateStep2Answer } = require("./services/geminiService");
+const mongoose = require("mongoose");
+const apiRoutes = require("./routes/api");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/edumaster_ai";
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors());
 app.use(express.json());
 
-// Dynamic assessments store (starts empty; populated strictly via student activity)
-let studentAssessments = [];
+// MongoDB Connection Setup
+mongoose
+  .connect(MONGO_URI)
+  .then(() => {
+    console.log(`[EduMaster AI Backend] Connected to MongoDB at ${MONGO_URI.split("@").pop()}`);
+  })
+  .catch((err) => {
+    console.warn(`[EduMaster AI Backend] MongoDB connection warning: ${err.message}. Operating with local persistence.`);
+  });
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", backend: "EduMaster AI Decoupled Java / Node Service", port: PORT });
-});
+// API router middleware
+app.use("/api", apiRoutes);
 
-app.post("/api/step1-teach", async (req, res) => {
-  const { topic, level } = req.body;
-  const topicName = topic || "SQL Queries";
-  const levelName = level || "Intermediate";
-
-  try {
-    const result = await generateStep1Lesson(topicName, levelName);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to generate lesson content", message: err.message });
-  }
-});
-
-app.post("/api/step2-evaluate", async (req, res) => {
-  const { topic, level, studentAnswer, answer1, answer2 } = req.body;
-  const topicName = topic || "SQL Queries";
-  const levelName = level || "Intermediate";
-  const answerText = (answer1 ? answer1 + " " + (answer2 || "") : studentAnswer) || "";
-
-  try {
-    const result = await evaluateStep2Answer(topicName, answerText, levelName);
-    
-    // Save record dynamically only when student submits
-    const newRecord = {
-      id: Date.now(),
-      topic: topicName,
-      level: levelName,
-      step2Score: result.score,
-      quizScore: 85,
-      overallMasteryScore: Math.round((result.score / 2.0) * 100 * 0.4 + 85 * 0.6),
-      missingPointsJson: JSON.stringify(result.missingPoints || []),
-      completedAt: new Date().toISOString().split("T")[0],
-    };
-    studentAssessments.unshift(newRecord);
-    result.assessmentId = newRecord.id;
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to evaluate answer", message: err.message });
-  }
-});
-
-app.get("/api/assessments", (req, res) => {
-  res.json(studentAssessments);
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "EduMaster AI Backend Service is Running", 
+    dbStatus: mongoose.connection.readyState === 1 ? "Connected to MongoDB" : "Local Storage Mode",
+    docs: "/api/health" 
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`=================================================`);
-  console.log(` EduMaster AI Backend Service Listening on http://localhost:${PORT}`);
-  console.log(` CORS Allowed Origin: http://localhost:3000`);
-  console.log(`=================================================`);
+  console.log(`[EduMaster AI Backend] Server listening on http://localhost:${PORT}`);
 });

@@ -19,13 +19,12 @@ import {
   FileCode2,
   ListChecks,
   ChevronRight,
-  GraduationCap,
-  FileText
+  Layers,
+  GraduationCap
 } from "lucide-react";
 
-interface SubTopicAssessmentState {
-  answer1: string;
-  answer2: string;
+interface SubTopicEval {
+  studentAnswer: string;
   isEvaluating: boolean;
   evaluation: {
     score: number;
@@ -45,18 +44,15 @@ export default function EnginePage() {
     addCompletedTopic,
   } = useLearning();
 
-  // PER-SUBTOPIC WIZARD FLOW:
-  // Sub-Topic Index: 0, 1, 2, 3...
-  // Sub-Topic View Mode: 'lesson' | 'assessment'
-  // When activeSubIndex >= subTopics.length -> Final MCQ Quiz Page
-  const [activeSubIndex, setActiveSubIndex] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<"lesson" | "assessment">("lesson");
+  // Wizard Navigation View Index:
+  // Even index 0, 2, 4, 6... -> Sub-Topic N Lesson View
+  // Odd index  1, 3, 5, 7... -> Sub-Topic N 2-Mark Question View
+  // Index = subTopics.length * 2 -> Final MCQ Quiz Page
+  const [currentViewIndex, setCurrentViewIndex] = useState<number>(0);
 
   const [loadingStage1, setLoadingStage1] = useState<boolean>(false);
+  const [subTopicEvals, setSubTopicEvals] = useState<Record<number, SubTopicEval>>({});
   const [copiedId, setCopiedId] = useState<number | null>(null);
-
-  // Per sub-topic assessment state
-  const [subAssessments, setSubAssessments] = useState<Record<number, SubTopicAssessmentState>>({});
 
   // Final MCQ Quiz State
   const [finalQuizQuestions, setFinalQuizQuestions] = useState<MCQQuestion[]>([]);
@@ -72,8 +68,7 @@ export default function EnginePage() {
   const fetchStage1Data = async (targetLevel: KnowledgeLevel = level) => {
     if (!selectedTopic.trim()) return;
     setLoadingStage1(true);
-    setActiveSubIndex(0);
-    setViewMode("lesson");
+    setCurrentViewIndex(0);
     try {
       const res = await fetch("/api/step1-teach", {
         method: "POST",
@@ -84,18 +79,17 @@ export default function EnginePage() {
       if (data.subTopics && Array.isArray(data.subTopics)) {
         setSubTopics(data.subTopics);
         
-        // Initialize sub-assessments map
-        const initialMap: Record<number, SubTopicAssessmentState> = {};
+        // Initialize evaluations map for each sub-topic
+        const initialEvals: Record<number, SubTopicEval> = {};
         data.subTopics.forEach((st: SubTopicLesson, idx: number) => {
           const idNum = st.id || idx + 1;
-          initialMap[idNum] = {
-            answer1: "",
-            answer2: "",
+          initialEvals[idNum] = {
+            studentAnswer: "",
             isEvaluating: false,
             evaluation: null,
           };
         });
-        setSubAssessments(initialMap);
+        setSubTopicEvals(initialEvals);
       }
     } catch (err) {
       console.error("Stage 1 fetch error:", err);
@@ -104,47 +98,47 @@ export default function EnginePage() {
     }
   };
 
+  // Trigger Stage 1 fetch on initial mount if subtopics empty
   useEffect(() => {
     if (subTopics.length === 0 && selectedTopic) {
       fetchStage1Data();
-    } else if (subTopics.length > 0 && Object.keys(subAssessments).length === 0) {
-      const initialMap: Record<number, SubTopicAssessmentState> = {};
+    } else if (subTopics.length > 0 && Object.keys(subTopicEvals).length === 0) {
+      const initialEvals: Record<number, SubTopicEval> = {};
       subTopics.forEach((st, idx) => {
         const idNum = st.id || idx + 1;
-        initialMap[idNum] = {
-          answer1: "",
-          answer2: "",
+        initialEvals[idNum] = {
+          studentAnswer: "",
           isEvaluating: false,
           evaluation: null,
         };
       });
-      setSubAssessments(initialMap);
+      setSubTopicEvals(initialEvals);
     }
   }, [selectedTopic]);
 
+  // Handle Dynamic Level Switcher Change
   const handleLevelChange = (newLevel: KnowledgeLevel) => {
     if (newLevel === level) return;
     setLevel(newLevel);
     fetchStage1Data(newLevel);
   };
 
+  // Copy Code Helper
   const handleCopyCode = (code: string, id: number) => {
     navigator.clipboard.writeText(code);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Submit 2-Mark Answers for Current Sub-Topic
-  const handleSubTopicAssessmentSubmit = async (subTopicId: number, subTopicTitle: string) => {
-    const currentState = subAssessments[subTopicId];
-    if (!currentState || (!currentState.answer1.trim() && !currentState.answer2.trim())) return;
+  // Handle 2-Mark Answer Submit for current sub-topic
+  const handleSubTopicSubmit = async (subTopicId: number, subTopicTitle: string) => {
+    const currentEval = subTopicEvals[subTopicId];
+    if (!currentEval || !currentEval.studentAnswer.trim()) return;
 
-    setSubAssessments((prev) => ({
+    setSubTopicEvals((prev) => ({
       ...prev,
       [subTopicId]: { ...prev[subTopicId], isEvaluating: true },
     }));
-
-    const combinedAnswer = `${currentState.answer1} ${currentState.answer2}`.trim();
 
     try {
       const res = await fetch("/api/step2-evaluate", {
@@ -152,15 +146,13 @@ export default function EnginePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: `${selectedTopic} - ${subTopicTitle}`,
+          studentAnswer: currentEval.studentAnswer,
           level,
-          studentAnswer: combinedAnswer,
-          answer1: currentState.answer1,
-          answer2: currentState.answer2,
         }),
       });
       const data = await res.json();
-
-      setSubAssessments((prev) => ({
+      
+      setSubTopicEvals((prev) => ({
         ...prev,
         [subTopicId]: {
           ...prev[subTopicId],
@@ -178,14 +170,15 @@ export default function EnginePage() {
         setFinalQuizQuestions(data.masteryQuiz);
       }
     } catch (err) {
-      console.error("Sub-topic assessment evaluation error:", err);
-      setSubAssessments((prev) => ({
+      console.error("Sub-topic evaluation error:", err);
+      setSubTopicEvals((prev) => ({
         ...prev,
         [subTopicId]: { ...prev[subTopicId], isEvaluating: false },
       }));
     }
   };
 
+  // Fetch Final Quiz Questions if needed
   const fetchFinalQuiz = async () => {
     if (finalQuizQuestions.length > 0) return;
     setLoadingQuiz(true);
@@ -195,8 +188,8 @@ export default function EnginePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: selectedTopic,
+          studentAnswer: "Final topic quiz generation request",
           level,
-          studentAnswer: "Final topic quiz generation request for all sub-topics",
         }),
       });
       const data = await res.json();
@@ -225,7 +218,7 @@ export default function EnginePage() {
     });
 
     const mcqPercent = Math.round((correctCount / finalQuizQuestions.length) * 100);
-    const evaluatedScores = Object.values(subAssessments)
+    const evaluatedScores = Object.values(subTopicEvals)
       .map((s) => s.evaluation?.score || 0);
     const avgSubScore = evaluatedScores.length > 0
       ? evaluatedScores.reduce((a, b) => a + b, 0) / evaluatedScores.length
@@ -246,18 +239,20 @@ export default function EnginePage() {
       step2Score: Math.round(avgSubScore * 10) / 10,
       quizScore: mcqPercent,
       overallMasteryScore: overallPercent,
-      missingPointsReviewed: ["Sub-topic definitions & syntax rules", "Key execution steps & mechanics"],
+      missingPointsReviewed: ["Core definitions & syntax rules", "Key execution steps & mechanics"],
     });
   };
 
+  // Determine Current View State
   const totalSubTopics = subTopics.length;
-  const isFinalQuizView = activeSubIndex >= totalSubTopics;
+  const isFinalQuizView = currentViewIndex >= totalSubTopics * 2;
+  const currentSubTopicIndex = Math.floor(currentViewIndex / 2);
+  const isAssessmentPage = currentViewIndex % 2 === 1;
 
-  const currentSubTopic: SubTopicLesson | undefined = subTopics[activeSubIndex];
-  const currentSubTopicId = currentSubTopic ? (currentSubTopic.id || activeSubIndex + 1) : 1;
-  const currentSubState = subAssessments[currentSubTopicId] || {
-    answer1: "",
-    answer2: "",
+  const currentSubTopic: SubTopicLesson | undefined = subTopics[currentSubTopicIndex];
+  const currentSubTopicId = currentSubTopic ? (currentSubTopic.id || currentSubTopicIndex + 1) : 1;
+  const currentEvalState = subTopicEvals[currentSubTopicId] || {
+    studentAnswer: "",
     isEvaluating: false,
     evaluation: null,
   };
@@ -269,22 +264,22 @@ export default function EnginePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase">
-              <GraduationCap className="w-3.5 h-3.5" /> Per-Subtopic Adaptive Engine
+              <GraduationCap className="w-3.5 h-3.5" /> W3Schools-Style Learning Wizard
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {selectedTopic}
             </h1>
           </div>
 
-          {/* DYNAMIC LEVEL SWITCHER (Easy | Intermediate | Advanced) */}
+          {/* DYNAMIC LEVEL SWITCHER DROPDOWN */}
           <div className="flex items-center gap-3 bg-[#0B0F19] p-3 rounded-2xl border border-slate-800 shrink-0">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Level Depth:</span>
             <div className="flex gap-1.5">
               {(["Easy", "Intermediate", "Advanced"] as KnowledgeLevel[]).map((lvl) => {
                 const isActive = level === lvl;
-                let activeStyle = "bg-emerald-600 text-white font-extrabold shadow-emerald-glow";
-                if (lvl === "Easy") activeStyle = "bg-amber-500 text-slate-950 font-extrabold";
-                if (lvl === "Advanced") activeStyle = "bg-rose-600 text-white font-extrabold";
+                let activeBadgeClass = "bg-emerald-600 text-white font-extrabold shadow-emerald-glow";
+                if (lvl === "Easy") activeBadgeClass = "bg-amber-500 text-slate-950 font-extrabold";
+                if (lvl === "Advanced") activeBadgeClass = "bg-rose-600 text-white font-extrabold";
 
                 return (
                   <button
@@ -292,7 +287,7 @@ export default function EnginePage() {
                     onClick={() => handleLevelChange(lvl)}
                     className={`px-3 py-1.5 rounded-xl text-xs transition ${
                       isActive
-                        ? activeStyle
+                        ? activeBadgeClass
                         : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
                     }`}
                   >
@@ -304,50 +299,58 @@ export default function EnginePage() {
           </div>
         </div>
 
-        {/* Per-Subtopic Stepper Navigator */}
+        {/* Wizard Step Navigation Bar */}
         {totalSubTopics > 0 && (
           <div className="pt-4 border-t border-slate-800 space-y-3">
             <div className="flex items-center justify-between text-xs font-bold text-slate-300">
               <span className="flex items-center gap-1.5 text-emerald-400">
-                <BookOpen className="w-4 h-4" />
+                <Layers className="w-4 h-4" />
                 {isFinalQuizView
-                  ? `Final Topic Mastery Quiz`
-                  : `Sub-Topic ${activeSubIndex + 1} of ${totalSubTopics}: ${currentSubTopic?.title}`}
+                  ? `Final Step: Topic MCQ Quiz`
+                  : `Sub-Topic ${currentSubTopicIndex + 1} of ${totalSubTopics}: ${isAssessmentPage ? "Exam Question Assessment" : "Detailed Lesson"}`}
               </span>
               <span>
-                Progress: {Math.round(((activeSubIndex * 2 + (viewMode === "assessment" ? 2 : 1)) / (totalSubTopics * 2 + 1)) * 100)}%
+                Progress: {Math.round(((currentViewIndex + 1) / (totalSubTopics * 2 + 1)) * 100)}%
               </span>
             </div>
 
-            {/* Sub-Topic Step Pills */}
+            {/* Step Pills Navigator */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {subTopics.map((st, idx) => {
-                const isCurrent = activeSubIndex === idx;
-                const isDone = activeSubIndex > idx;
-                const stId = st.id || idx + 1;
-                const hasEval = subAssessments[stId]?.evaluation !== null;
+                const lessonViewIdx = idx * 2;
+                const questViewIdx = idx * 2 + 1;
+                const isLessonActive = currentViewIndex === lessonViewIdx;
+                const isQuestActive = currentViewIndex === questViewIdx;
+                const isCompleted = currentViewIndex > questViewIdx;
 
                 return (
-                  <React.Fragment key={stId}>
+                  <React.Fragment key={st.id || idx}>
                     <button
-                      onClick={() => {
-                        setActiveSubIndex(idx);
-                        setViewMode("lesson");
-                      }}
-                      className={`px-3.5 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition flex items-center gap-2 ${
-                        isCurrent && viewMode === "lesson"
+                      onClick={() => setCurrentViewIndex(lessonViewIdx)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        isLessonActive
                           ? "bg-emerald-500/20 border-emerald-500 text-white shadow-emerald-glow"
-                          : isCurrent && viewMode === "assessment"
-                          ? "bg-amber-500/20 border-amber-500 text-white"
-                          : isDone || hasEval
+                          : isCompleted
                           ? "bg-slate-900 border-emerald-500/40 text-emerald-400"
                           : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
                       }`}
                     >
-                      <span className="w-5 h-5 rounded-full bg-slate-950 text-slate-300 text-[10px] flex items-center justify-center font-black">
-                        {idx + 1}
-                      </span>
-                      <span>{st.title}</span>
+                      <BookOpen className="w-3 h-3" />
+                      <span>Sub {idx + 1}: Lesson</span>
+                    </button>
+
+                    <button
+                      onClick={() => setCurrentViewIndex(questViewIdx)}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        isQuestActive
+                          ? "bg-amber-500/20 border-amber-500 text-white"
+                          : subTopicEvals[st.id || idx + 1]?.evaluation
+                          ? "bg-slate-900 border-amber-500/40 text-amber-400"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <Target className="w-3 h-3" />
+                      <span>Sub {idx + 1}: Exam</span>
                     </button>
                     {idx < totalSubTopics - 1 && <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />}
                   </React.Fragment>
@@ -358,15 +361,15 @@ export default function EnginePage() {
               <button
                 onClick={() => {
                   fetchFinalQuiz();
-                  setActiveSubIndex(totalSubTopics);
+                  setCurrentViewIndex(totalSubTopics * 2);
                 }}
-                className={`px-4 py-2 rounded-xl border text-xs font-bold whitespace-nowrap transition flex items-center gap-2 ${
+                className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
                   isFinalQuizView
                     ? "bg-emerald-600 border-emerald-400 text-white shadow-emerald-glow"
                     : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
-                <Award className="w-4 h-4 text-emerald-400" />
+                <Award className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Final MCQ Quiz</span>
               </button>
             </div>
@@ -374,16 +377,16 @@ export default function EnginePage() {
         )}
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Wizard Content Area */}
       {loadingStage1 ? (
         <div className="py-20 flex flex-col items-center justify-center space-y-4 glass-card rounded-3xl">
           <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
           <p className="text-sm font-bold text-slate-300 animate-pulse">
-            Loading {level} level sub-topics with Gemini AI...
+            Loading {level} teaching lesson with Gemini AI...
           </p>
         </div>
       ) : isFinalQuizView ? (
-        /* FINAL STEP: SEPARATE FINAL TOPIC MASTERY QUIZ PAGE (5 TO 7 MCQS) */
+        /* PAGE FINAL: SEPARATE 5 TO 7 QUESTION MCQ QUIZ PAGE */
         <div className="glass-card p-8 rounded-3xl space-y-8">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <div className="flex items-center gap-3">
@@ -391,7 +394,7 @@ export default function EnginePage() {
                 <Award className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Final Topic Mastery Quiz</h2>
+                <h2 className="text-xl font-extrabold text-white">FINAL TOPIC MASTERY QUIZ</h2>
                 <p className="text-xs text-slate-300">5 to 7 MCQs covering all sub-topics of {selectedTopic}</p>
               </div>
             </div>
@@ -414,7 +417,7 @@ export default function EnginePage() {
                       <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-black shrink-0 border border-emerald-500/30">
                         Q{qIdx + 1}
                       </span>
-                      <h3 className="text-base font-semibold text-white leading-snug">{q.question}</h3>
+                      <h3 className="text-sm font-bold text-white leading-snug">{q.question}</h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8">
@@ -457,7 +460,7 @@ export default function EnginePage() {
 
                     {quizSubmitted && (
                       <div className="mt-3 ml-8 p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 leading-relaxed">
-                        <span className="font-bold text-emerald-400 block mb-1">Explanation feedback:</span>
+                        <span className="font-bold text-emerald-400 block mb-1">Explanation Feedback:</span>
                         {q.explanation}
                       </div>
                     )}
@@ -481,7 +484,7 @@ export default function EnginePage() {
 
                   <div>
                     <span className="text-xs uppercase tracking-widest text-emerald-400 font-extrabold block">
-                      Topic Mastery Certificate & Analytics
+                      Topic Mastery Certificate & Scorecard
                     </span>
                     <h3 className="text-4xl font-black text-white mt-1">
                       Topic Mastered ({finalScorecard.overallPercent}%)
@@ -504,48 +507,49 @@ export default function EnginePage() {
             </div>
           ) : null}
         </div>
-      ) : viewMode === "lesson" && currentSubTopic ? (
-        /* SUB-TOPIC N LESSON CARD */
+      ) : !isAssessmentPage && currentSubTopic ? (
+        /* PAGE 1: SUB-TOPIC N DETAILED LESSON PAGE */
         <div className="glass-card p-8 rounded-3xl space-y-7">
+          {/* Sub-Topic Header */}
           <div className="space-y-2 border-b border-slate-800 pb-4">
-            <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
-              <BookOpen className="w-4 h-4" /> Sub-Topic {activeSubIndex + 1} Lesson Card
+            <div className="flex items-center gap-2 text-indigo-400 text-xs font-extrabold uppercase tracking-wider">
+              <BookOpen className="w-4 h-4" /> Sub-Topic {currentSubTopicIndex + 1} Detailed Lesson
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-wide">{currentSubTopic.title}</h2>
+            <h2 className="text-2xl font-black text-white">{currentSubTopic.title}</h2>
           </div>
 
           {/* 1. Concept Overview & Analogy */}
           <div className="p-5 rounded-2xl bg-[#0B0F19] border border-slate-800 space-y-2">
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-              Concept overview & real-world analogy
+            <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider block">
+              Concept Overview & Analogy
             </span>
-            <p className="text-base text-slate-200 leading-relaxed">
+            <p className="text-sm text-slate-200 leading-relaxed">
               {currentSubTopic.overview}
             </p>
           </div>
 
-          {/* 2. Detailed Mechanics */}
+          {/* 2. Detailed Mechanics & Explanation */}
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-emerald-400" />
-              In-depth mechanics & explanation ({level} level)
+              In-Depth Mechanics & University Explanation
             </h3>
-            <p className="text-base text-slate-200 leading-relaxed whitespace-pre-line">
+            <p className="text-sm text-slate-200 leading-relaxed font-normal whitespace-pre-line">
               {currentSubTopic.detailedExplanation}
             </p>
           </div>
 
-          {/* 3. Key Rules */}
+          {/* 3. Core Rules & Requirements */}
           {currentSubTopic.keyRules && currentSubTopic.keyRules.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
                 <ListChecks className="w-4 h-4 text-teal-400" />
-                Key rules & execution steps
+                Key Execution Rules & Requirements
               </h3>
               <div className="space-y-2">
                 {currentSubTopic.keyRules.map((rule, rIdx) => (
-                  <div key={rIdx} className="p-3.5 rounded-xl bg-[#0B0F19] border border-slate-800 text-sm text-slate-200 flex items-start gap-2.5 font-medium">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 mt-2 shrink-0" />
+                  <div key={rIdx} className="p-3.5 rounded-xl bg-[#0B0F19] border border-slate-800 text-xs text-slate-200 flex items-start gap-2.5 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
                     <span>{rule}</span>
                   </div>
                 ))}
@@ -553,13 +557,13 @@ export default function EnginePage() {
             </div>
           )}
 
-          {/* 4. Code Syntax Block */}
+          {/* 4. Runnable Code Block */}
           {currentSubTopic.codeExample && (
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <FileCode2 className="w-4 h-4 text-emerald-400" />
-                  Code syntax block
+                  Runnable Code Syntax Block
                 </span>
                 <button
                   onClick={() => handleCopyCode(currentSubTopic.codeExample, currentSubTopicId)}
@@ -573,7 +577,7 @@ export default function EnginePage() {
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Copy code</span>
+                      <span>Copy Code</span>
                     </>
                   )}
                 </button>
@@ -584,106 +588,95 @@ export default function EnginePage() {
             </div>
           )}
 
-          {/* Bottom Action Button: Go to Assessment */}
+          {/* Bottom Action Button: Go to Assessment Page 2 */}
           <div className="pt-6 border-t border-slate-800 flex justify-end">
             <button
-              onClick={() => setViewMode("assessment")}
+              onClick={() => setCurrentViewIndex(currentViewIndex + 1)}
               className="emerald-button text-white px-8 py-3.5 rounded-xl font-bold text-xs shadow-emerald-glow flex items-center gap-2"
             >
-              <span>Proceed to Sub-Topic {activeSubIndex + 1} Assessment (2 Questions)</span>
+              <span>Take Sub-Topic {currentSubTopicIndex + 1} Assessment (2-Mark Question)</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       ) : currentSubTopic ? (
-        /* SUB-TOPIC N ASSESSMENT VIEW (2 QUESTIONS) */
+        /* PAGE 2: SUB-TOPIC N 2-MARK EXAM QUESTION PAGE */
         <div className="glass-card p-8 rounded-3xl space-y-7 border border-amber-500/30">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                <Target className="w-4 h-4" /> Sub-Topic {activeSubIndex + 1} Assessment
+              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Target className="w-4 h-4" /> Sub-Topic {currentSubTopicIndex + 1} 2-Mark Exam Assessment
               </span>
-              <h2 className="text-2xl font-bold text-white tracking-wide">{currentSubTopic.title}</h2>
+              <h2 className="text-xl font-black text-white">{currentSubTopic.title}</h2>
             </div>
 
-            {currentSubState.evaluation && (
+            {currentEvalState.evaluation && (
               <div className="px-4 py-2 rounded-2xl bg-[#0B0F19] border border-amber-500/40 text-right shrink-0">
                 <div className="text-[10px] uppercase font-bold text-slate-400">Score</div>
                 <div className="text-xl font-black text-amber-400">
-                  {currentSubState.evaluation.score} / 2.0
+                  {currentEvalState.evaluation.score} / 2.0
                 </div>
               </div>
             )}
           </div>
 
-          {/* Question 1 */}
-          <div className="space-y-3">
-            <label className="text-lg font-semibold text-amber-300 leading-snug block">
-              Question 1: {currentSubTopic.question1 || `Explain the core purpose and execution rules of ${currentSubTopic.title}.`}
-            </label>
-            <textarea
-              rows={3}
-              value={currentSubState.answer1}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSubAssessments((prev) => ({
-                  ...prev,
-                  [currentSubTopicId]: { ...prev[currentSubTopicId], answer1: val },
-                }));
-              }}
-              placeholder="Type your technical explanation for Question 1..."
-              className="w-full bg-[#0B0F19] border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-            />
+          {/* Question Text */}
+          <div className="p-5 rounded-2xl bg-[#0B0F19] border border-slate-800 space-y-2">
+            <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+              Exam Question:
+            </span>
+            <p className="text-base font-bold text-white leading-relaxed">
+              "{currentSubTopic.question || `Explain the core mechanics and execution requirements of ${currentSubTopic.title}.`}"
+            </p>
           </div>
 
-          {/* Question 2 */}
+          {/* Answer Textarea */}
           <div className="space-y-3">
-            <label className="text-lg font-semibold text-amber-300 leading-snug block">
-              Question 2: {currentSubTopic.question2 || `What happens during edge cases or invalid input evaluation in ${currentSubTopic.title}?`}
+            <label className="block text-xs font-extrabold text-slate-300 uppercase tracking-wider">
+              Your Written Technical Answer
             </label>
             <textarea
-              rows={3}
-              value={currentSubState.answer2}
+              rows={4}
+              value={currentEvalState.studentAnswer}
               onChange={(e) => {
                 const val = e.target.value;
-                setSubAssessments((prev) => ({
+                setSubTopicEvals((prev) => ({
                   ...prev,
-                  [currentSubTopicId]: { ...prev[currentSubTopicId], answer2: val },
+                  [currentSubTopicId]: { ...prev[currentSubTopicId], studentAnswer: val },
                 }));
               }}
-              placeholder="Type your technical explanation for Question 2..."
+              placeholder="Type your technical explanation here (write at least 1-2 complete sentences covering key definitions, rules, and syntax)..."
               className="w-full bg-[#0B0F19] border border-slate-800 rounded-2xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
             />
-          </div>
 
-          {/* Submit Button */}
-          <button
-            onClick={() => handleSubTopicAssessmentSubmit(currentSubTopicId, currentSubTopic.title)}
-            disabled={currentSubState.isEvaluating || (!currentSubState.answer1.trim() && !currentSubState.answer2.trim())}
-            className="emerald-button text-white px-7 py-3 rounded-xl font-bold text-xs shadow-emerald-glow flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {currentSubState.isEvaluating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Evaluating answers...
-              </>
-            ) : (
-              <>
-                <span>Submit Answers for Evaluation</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
+            <button
+              onClick={() => handleSubTopicSubmit(currentSubTopicId, currentSubTopic.title)}
+              disabled={currentEvalState.isEvaluating || !currentEvalState.studentAnswer.trim()}
+              className="emerald-button text-white px-7 py-3 rounded-xl font-bold text-xs shadow-emerald-glow flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {currentEvalState.isEvaluating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Evaluating Written Answer...
+                </>
+              ) : (
+                <>
+                  <span>Submit Answer for Evaluation</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Evaluation Readout */}
-          {currentSubState.evaluation && (
+          {currentEvalState.evaluation && (
             <div className="pt-4 border-t border-slate-800 space-y-4">
               <div className="space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4" /> Missing key technical terms
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4" /> Missing Technical Terms & Points
                 </span>
                 <div className="space-y-2">
-                  {currentSubState.evaluation.missingPoints.map((pt, pIdx) => (
+                  {currentEvalState.evaluation.missingPoints.map((pt, pIdx) => (
                     <div key={pIdx} className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 font-medium flex items-start gap-2.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
                       <span>{pt}</span>
@@ -692,13 +685,13 @@ export default function EnginePage() {
                 </div>
               </div>
 
-              {currentSubState.evaluation.targetedReTeaching.length > 0 && (
+              {currentEvalState.evaluation.targetedReTeaching.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4" /> Targeted re-teaching explanation
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Targeted Re-Teaching Explanation
                   </span>
                   <div className="space-y-2">
-                    {currentSubState.evaluation.targetedReTeaching.map((re, rIdx) => (
+                    {currentEvalState.evaluation.targetedReTeaching.map((re, rIdx) => (
                       <div key={rIdx} className="p-3.5 rounded-xl bg-[#0B0F19] border border-emerald-500/30 text-xs text-slate-200 leading-relaxed font-medium">
                         {re}
                       </div>
@@ -709,31 +702,30 @@ export default function EnginePage() {
             </div>
           )}
 
-          {/* Navigation Action Buttons */}
+          {/* Bottom Action Navigation Buttons */}
           <div className="pt-6 border-t border-slate-800 flex items-center justify-between">
             <button
-              onClick={() => setViewMode("lesson")}
+              onClick={() => setCurrentViewIndex(currentViewIndex - 1)}
               className="px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-2 transition"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Sub-Topic {activeSubIndex + 1} Lesson</span>
+              <span>Back to Lesson</span>
             </button>
 
             <button
               onClick={() => {
-                if (activeSubIndex < totalSubTopics - 1) {
-                  setActiveSubIndex(activeSubIndex + 1);
-                  setViewMode("lesson");
+                if (currentSubTopicIndex < totalSubTopics - 1) {
+                  setCurrentViewIndex((currentSubTopicIndex + 1) * 2);
                 } else {
                   fetchFinalQuiz();
-                  setActiveSubIndex(totalSubTopics);
+                  setCurrentViewIndex(totalSubTopics * 2);
                 }
               }}
               className="emerald-button text-white px-8 py-3.5 rounded-xl font-bold text-xs shadow-emerald-glow flex items-center gap-2"
             >
               <span>
-                {activeSubIndex < totalSubTopics - 1
-                  ? `Proceed to Sub-Topic ${activeSubIndex + 2} Lesson →`
+                {currentSubTopicIndex < totalSubTopics - 1
+                  ? `Proceed to Sub-Topic ${currentSubTopicIndex + 2} Lesson →`
                   : `Proceed to Final Topic MCQ Quiz →`}
               </span>
             </button>

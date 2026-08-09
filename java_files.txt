@@ -1,0 +1,7 @@
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\EduMasterApplication.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\controller\AssessmentController.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\dto\Step1Request.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\dto\Step2Request.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\entity\StudentAssessment.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\repository\StudentAssessmentRepository.java
+C:\Users\GOKUL S\OneDrive\Desktop\Project Hackathon\EduMaster-AI-\backend-spring\src\main\java\com\edumaster\service\GeminiService.java
